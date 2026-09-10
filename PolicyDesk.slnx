@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PolicyDesk.Api/PolicyDesk.Api.csproj" />
+  <Project Path="PolicyDesk.Tests/PolicyDesk.Tests.csproj" />
+</Solution>
