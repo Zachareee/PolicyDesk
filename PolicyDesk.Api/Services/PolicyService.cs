@@ -129,7 +129,9 @@ public class PolicyService : IPolicyService
     {
         ValidateCreateRequest(request);
 
-        if (await _db.Policies.AnyAsync(p => p.PolicyNumber == request.PolicyNumber, cancellationToken))
+        var normalizedPolicyNumber = NormalizePolicyNumber(request.PolicyNumber);
+        var duplicateCheck = normalizedPolicyNumber.ToUpperInvariant();
+        if (await _db.Policies.AnyAsync(p => p.PolicyNumber.ToUpper() == duplicateCheck, cancellationToken))
         {
             throw new InvalidOperationException("A policy with this number already exists.");
         }
@@ -137,7 +139,7 @@ public class PolicyService : IPolicyService
         var record = new PolicyRecord
         {
             Id = Guid.NewGuid(),
-            PolicyNumber = request.PolicyNumber.Trim(),
+            PolicyNumber = normalizedPolicyNumber,
             CustomerName = request.CustomerName.Trim(),
             CustomerIdentifier = request.CustomerIdentifier.Trim(),
             PolicyType = request.PolicyType.Trim(),
@@ -177,9 +179,9 @@ public class PolicyService : IPolicyService
 
         if (!string.IsNullOrWhiteSpace(request.PolicyNumber))
         {
-            var value = request.PolicyNumber.Trim();
+            var value = NormalizePolicyNumber(request.PolicyNumber);
             if (value.Length < 3) throw new InvalidOperationException("Policy number is required.");
-            if (await _db.Policies.AnyAsync(p => p.Id != id && p.PolicyNumber == value, cancellationToken))
+            if (await _db.Policies.AnyAsync(p => p.Id != id && p.PolicyNumber.ToUpper() == value.ToUpperInvariant(), cancellationToken))
             {
                 throw new InvalidOperationException("A policy with this number already exists.");
             }
@@ -260,16 +262,18 @@ public class PolicyService : IPolicyService
                 policy.CurrentStatus = PolicyStatus.Quoted;
                 break;
             case PolicyStatus.Draft when action.Equals("Delete", StringComparison.OrdinalIgnoreCase):
+                var deletedDraft = MapPolicyDetail(policy);
                 _db.Policies.Remove(policy);
                 await _db.SaveChangesAsync(cancellationToken);
-                throw new InvalidOperationException("Policy deleted successfully.");
+                return deletedDraft;
             case PolicyStatus.Quoted when action.Equals("Purchase", StringComparison.OrdinalIgnoreCase):
                 policy.CurrentStatus = PolicyStatus.Active;
                 break;
             case PolicyStatus.Quoted when action.Equals("Delete", StringComparison.OrdinalIgnoreCase):
+                var deletedQuoted = MapPolicyDetail(policy);
                 _db.Policies.Remove(policy);
                 await _db.SaveChangesAsync(cancellationToken);
-                throw new InvalidOperationException("Policy deleted successfully.");
+                return deletedQuoted;
             case PolicyStatus.Active when action.Equals("File claim", StringComparison.OrdinalIgnoreCase):
                 policy.CurrentStatus = PolicyStatus.ClaimInReview;
                 policy.ClaimReference ??= $"CLAIM-{Guid.NewGuid():N}"[..12].ToUpperInvariant();
@@ -317,6 +321,11 @@ public class PolicyService : IPolicyService
         if (request.Premium <= 0) throw new InvalidOperationException("Premium must be greater than zero.");
         if (request.CoverageAmount <= 0) throw new InvalidOperationException("Coverage amount must be greater than zero.");
         if (request.EffectiveDate >= request.ExpirationDate) throw new InvalidOperationException("Effective date must be before expiration date.");
+    }
+
+    private static string NormalizePolicyNumber(string value)
+    {
+        return value.Trim();
     }
 
     private static PolicyDetailDto MapPolicyDetail(PolicyRecord policy)
