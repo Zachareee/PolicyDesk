@@ -12,8 +12,8 @@ using PolicyDesk.Api.Data;
 namespace PolicyDesk.Api.Migrations
 {
     [DbContext(typeof(PolicyDbContext))]
-    [Migration("20260910230711_MySqlInitialCreate")]
-    partial class MySqlInitialCreate
+    [Migration("20260911090048_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

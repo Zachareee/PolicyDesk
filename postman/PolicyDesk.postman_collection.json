@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "Policy Desk API Demonstration",
+    "description": "End-to-end demonstration of policy search, CRUD operations, and lifecycle actions. Import this collection and the companion local environment into Postman, select Policy Desk - Local, then run the requests in order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5070"
+    },
+    {
+      "key": "policyId",
+      "value": ""
+    },
+    {
+      "key": "renewalPolicyId",
+      "value": ""
+    },
+    {
+      "key": "deletePolicyId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Browse Policies",
+      "item": [
+        {
+          "name": "List policies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies?page=1&pageSize=20&sortBy=UpdatedAt&sortDirection=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "policies"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"},
+                {"key": "sortBy", "value": "UpdatedAt"},
+                {"key": "sortDirection", "value": "desc"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search and filter policies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies?search=Alice&status=Draft&policyType=Auto&insurer=Acme%20Insurance&minPremium=50&maxPremium=500&page=1&pageSize=10&sortBy=Premium&sortDirection=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "policies"],
+              "query": [
+                {"key": "search", "value": "Alice"},
+                {"key": "status", "value": "Draft"},
+                {"key": "policyType", "value": "Auto"},
+                {"key": "insurer", "value": "Acme Insurance"},
+                {"key": "minPremium", "value": "50"},
+                {"key": "maxPremium", "value": "500"},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "10"},
+                {"key": "sortBy", "value": "Premium"},
+                {"key": "sortDirection", "value": "asc"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create and Edit",
+      "item": [
+        {
+          "name": "Create demonstration policy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created policy', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('policyId', body.id);",
+                  "pm.collectionVariables.set('policyId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policyNumber\": \"PD-DEMO-1001\",\n  \"customerName\": \"Alice Smith\",\n  \"customerIdentifier\": \"CUST-DEMO-001\",\n  \"policyType\": \"Auto\",\n  \"insurer\": \"Acme Insurance\",\n  \"premium\": 120.50,\n  \"billingFrequency\": \"Monthly\",\n  \"coverageAmount\": 25000,\n  \"deductible\": 500,\n  \"effectiveDate\": \"2026-01-01T00:00:00Z\",\n  \"expirationDate\": \"2026-12-31T00:00:00Z\",\n  \"assignedAgent\": \"Jordan Lee\",\n  \"notes\": \"Primary demonstration policy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/policies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "policies"]
+            }
+          }
+        },
+        {
+          "name": "Get demonstration policy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/{{policyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "policies", "{{policyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update demonstration policy",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"premium\": 135.75,\n  \"deductible\": 750,\n  \"assignedAgent\": \"Morgan Lee\",\n  \"notes\": \"Updated during API demonstration\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/{{policyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "policies", "{{policyId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Main Lifecycle",
+      "item": [
+        {
+          "name": "Quote draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Quote", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Quote"]}
+          }
+        },
+        {
+          "name": "Purchase quote",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Purchase", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Purchase"]}
+          }
+        },
+        {
+          "name": "File claim",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Claim entered review', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().currentStatus).to.eql('ClaimInReview'); });"]}}],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/File%20claim", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "File%20claim"]}
+          }
+        },
+        {
+          "name": "View claim",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/View%20claim", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "View%20claim"]}
+          }
+        },
+        {
+          "name": "Withdraw claim",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Withdraw%20claim", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Withdraw%20claim"]}
+          }
+        },
+        {
+          "name": "Suspend active policy",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Suspend", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Suspend"]}
+          }
+        },
+        {
+          "name": "Pay premium and reactivate",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Pay%20premium", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Pay%20premium"]}
+          }
+        },
+        {
+          "name": "Cancel policy",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/policies/{{policyId}}/actions/Cancel", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{policyId}}", "actions", "Cancel"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Renewal and Delete",
+      "item": [
+        {
+          "name": "Create renewal demo policy",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Created renewal policy', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.environment.set('renewalPolicyId', body.id);", "pm.collectionVariables.set('renewalPolicyId', body.id);"]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"policyNumber\": \"PD-DEMO-2002\",\n  \"customerName\": \"Taylor Morgan\",\n  \"customerIdentifier\": \"CUST-DEMO-002\",\n  \"policyType\": \"Home\",\n  \"insurer\": \"Northwind Mutual\",\n  \"premium\": 220,\n  \"billingFrequency\": \"Annual\",\n  \"coverageAmount\": 150000,\n  \"deductible\": 1000,\n  \"effectiveDate\": \"2025-01-01T00:00:00Z\",\n  \"expirationDate\": \"2025-12-31T00:00:00Z\",\n  \"notes\": \"Renewal demonstration policy\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/policies", "host": ["{{baseUrl}}"], "path": ["api", "policies"]}
+          }
+        },
+        {
+          "name": "Mark policy term ended",
+          "request": {"method": "POST", "header": [], "url": {"raw": "{{baseUrl}}/api/policies/{{renewalPolicyId}}/actions/Term%20ends", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{renewalPolicyId}}", "actions", "Term%20ends"]}}
+        },
+        {
+          "name": "Renew expired policy",
+          "request": {"method": "POST", "header": [], "url": {"raw": "{{baseUrl}}/api/policies/{{renewalPolicyId}}/actions/Renew", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{renewalPolicyId}}", "actions", "Renew"]}}
+        },
+        {
+          "name": "Create delete demo policy",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Created delete policy', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.environment.set('deletePolicyId', body.id);", "pm.collectionVariables.set('deletePolicyId', body.id);"]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"policyNumber\": \"PD-DEMO-3003\",\n  \"customerName\": \"Jamie Rivera\",\n  \"customerIdentifier\": \"CUST-DEMO-003\",\n  \"policyType\": \"Travel\",\n  \"insurer\": \"Acme Insurance\",\n  \"premium\": 75,\n  \"billingFrequency\": \"Monthly\",\n  \"coverageAmount\": 10000,\n  \"deductible\": 100,\n  \"effectiveDate\": \"2026-03-01T00:00:00Z\",\n  \"expirationDate\": \"2026-09-30T00:00:00Z\",\n  \"notes\": \"Deletion demonstration policy\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/policies", "host": ["{{baseUrl}}"], "path": ["api", "policies"]}
+          }
+        },
+        {
+          "name": "Delete draft with confirmation",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Policy deleted', function () { pm.response.to.have.status(204); });"]}}],
+          "request": {"method": "DELETE", "header": [], "url": {"raw": "{{baseUrl}}/api/policies/{{deletePolicyId}}?confirm=true", "host": ["{{baseUrl}}"], "path": ["api", "policies", "{{deletePolicyId}}"], "query": [{"key": "confirm", "value": "true"}]}}
+        }
+      ]
+    }
+  ]
+}
