@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace PolicyDesk.Api.Data;
 
@@ -8,8 +9,16 @@ public class PolicyDbContextFactory : IDesignTimeDbContextFactory<PolicyDbContex
     public PolicyDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<PolicyDbContext>();
-        var connectionString = "Server=localhost;Port=3306;Database=policydesk;User=root;";
-        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+
+        optionsBuilder.UseSqlServer(connectionString);
 
         return new PolicyDbContext(optionsBuilder.Options);
     }

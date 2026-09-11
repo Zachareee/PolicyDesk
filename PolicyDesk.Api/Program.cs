@@ -10,12 +10,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<PolicyDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    var effectiveConnectionString = !string.IsNullOrWhiteSpace(connectionString)
-        ? connectionString
-        : "Server=localhost;Port=3306;Database=policydesk;User=root;";
-
-    options.UseMySql(effectiveConnectionString, ServerVersion.AutoDetect(effectiveConnectionString));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 builder.Services.AddScoped<IPolicyService, PolicyService>();
