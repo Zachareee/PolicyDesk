@@ -30,7 +30,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PolicyDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.MapControllers();
